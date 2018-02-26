@@ -23,16 +23,16 @@
 
 namespace flatbuffers {
 
-static std::string GenType(const Type &type, bool underlying = false) {
+static std::string GenType(const Parser &parser, const Type &type, bool underlying = false) {
   switch (type.base_type) {
     case BASE_TYPE_STRUCT:
-      return type.struct_def->defined_namespace->GetFullyQualifiedName(
-          type.struct_def->name);
-    case BASE_TYPE_VECTOR: return "[" + GenType(type.VectorType()) + "]";
+      return type.struct_def->defined_namespace->GetFullyQualifiedName( 
+          type.struct_def->name, &parser);
+    case BASE_TYPE_VECTOR: return "[" + GenType(parser, type.VectorType()) + "]";
     default:
       if (type.enum_def && !underlying) {
         return type.enum_def->defined_namespace->GetFullyQualifiedName(
-            type.enum_def->name);
+            type.enum_def->name, &parser);
       } else {
         return kTypeNames[type.base_type];
       }
@@ -92,7 +92,7 @@ std::string GenerateFBS(const Parser &parser, const std::string &file_name) {
     GenNameSpace(*enum_def.defined_namespace, &schema, &last_namespace);
     GenComment(enum_def.doc_comment, &schema, nullptr);
     schema += "enum " + enum_def.name + " : ";
-    schema += GenType(enum_def.underlying_type, true) + " {\n";
+    schema += GenType(parser, enum_def.underlying_type, true) + " {\n";
     for (auto it = enum_def.vals.vec.begin(); it != enum_def.vals.vec.end();
          ++it) {
       auto &ev = **it;
@@ -113,7 +113,7 @@ std::string GenerateFBS(const Parser &parser, const std::string &file_name) {
       auto &field = **field_it;
       if (field.value.type.base_type != BASE_TYPE_UTYPE) {
         GenComment(field.doc_comment, &schema, nullptr, "  ");
-        schema += "  " + field.name + ":" + GenType(field.value.type);
+        schema += "  " + field.name + ":" + GenType(parser, field.value.type);
         if (field.value.constant != "0") schema += " = " + field.value.constant;
         if (field.required) schema += " (required)";
         schema += ";\n";

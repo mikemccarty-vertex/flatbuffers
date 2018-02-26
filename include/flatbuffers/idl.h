@@ -204,6 +204,7 @@ struct Namespace {
   // With max_components you can request less than the number of components
   // the current namespace has.
   std::string GetFullyQualifiedName(const std::string &name,
+                                    const Parser* parser = nullptr,
                                     size_t max_components = 1000) const;
 
   std::vector<std::string> components;

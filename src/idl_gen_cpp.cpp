@@ -317,7 +317,7 @@ class CppGenerator : public BaseGenerator {
       auto &struct_def = *parser_.root_struct_def_;
       SetNameSpace(struct_def.defined_namespace);
       auto name = Name(struct_def);
-      auto qualified_name = cur_name_space_->GetFullyQualifiedName(name);
+      auto qualified_name = cur_name_space_->GetFullyQualifiedName(name, &parser_);
       auto cpp_name = TranslateNameSpace(qualified_name);
 
       code_.SetValue("STRUCT_NAME", name);
@@ -1305,7 +1305,7 @@ class CppGenerator : public BaseGenerator {
   void GenFullyQualifiedNameGetter(const StructDef &struct_def,
                                    const std::string &name) {
     if (!parser_.opts.generate_name_strings) { return; }
-    auto fullname = struct_def.defined_namespace->GetFullyQualifiedName(name);
+    auto fullname = struct_def.defined_namespace->GetFullyQualifiedName(name, &parser_);
     code_.SetValue("NAME", fullname);
     code_.SetValue("CONSTEXPR", "FLATBUFFERS_CONSTEXPR");
     code_ += "  static {{CONSTEXPR}} const char *GetFullyQualifiedName() {";
@@ -1673,7 +1673,7 @@ class CppGenerator : public BaseGenerator {
       auto nested = field.attributes.Lookup("nested_flatbuffer");
       if (nested) {
         std::string qualified_name =
-            parser_.current_namespace_->GetFullyQualifiedName(nested->constant);
+            parser_.current_namespace_->GetFullyQualifiedName(nested->constant, &parser_);
         auto nested_root = parser_.LookupStruct(qualified_name);
         assert(nested_root);  // Guaranteed to exist by parser.
         (void)nested_root;
@@ -1931,7 +1931,7 @@ class CppGenerator : public BaseGenerator {
 
       // Need to call "Create" with the struct namespace.
       const auto qualified_create_name =
-          struct_def.defined_namespace->GetFullyQualifiedName("Create");
+          struct_def.defined_namespace->GetFullyQualifiedName("Create", &parser_);
       code_.SetValue("CREATE_NAME", TranslateNameSpace(qualified_create_name));
 
       code_ += ") {";
@@ -2325,7 +2325,7 @@ class CppGenerator : public BaseGenerator {
       }
       // Need to call "Create" with the struct namespace.
       const auto qualified_create_name =
-          struct_def.defined_namespace->GetFullyQualifiedName("Create");
+          struct_def.defined_namespace->GetFullyQualifiedName("Create", &parser_);
       code_.SetValue("CREATE_NAME", TranslateNameSpace(qualified_create_name));
 
       code_ += "  return {{CREATE_NAME}}{{STRUCT_NAME}}(";

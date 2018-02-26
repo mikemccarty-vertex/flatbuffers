@@ -325,7 +325,7 @@ class JavaGRPCGenerator : public flatbuffers::BaseGenerator {
       auto service = file.service(i);
       const Definition *def = parser_.services_.vec[i];
       p.package_name =
-          def->defined_namespace->GetFullyQualifiedName("");  // file.package();
+          def->defined_namespace->GetFullyQualifiedName("", &parser_);  // file.package();
       std::string output =
           grpc_java_generator::GenerateServiceSource(&file, service.get(), &p);
       std::string filename =
