@@ -343,7 +343,7 @@ class CppGenerator : public BaseGenerator {
       auto &struct_def = *parser_.root_struct_def_;
       SetNameSpace(struct_def.defined_namespace);
       auto name = Name(struct_def);
-      auto qualified_name = cur_name_space_->GetFullyQualifiedName(name, &parser_);
+      auto qualified_name = cur_name_space_->GetFullyQualifiedName(name);
       auto cpp_name = TranslateNameSpace(qualified_name);
 
       code_.SetValue("STRUCT_NAME", name);
@@ -1418,7 +1418,7 @@ class CppGenerator : public BaseGenerator {
   void GenFullyQualifiedNameGetter(const StructDef &struct_def,
                                    const std::string &name) {
     if (!parser_.opts.generate_name_strings) { return; }
-    auto fullname = struct_def.defined_namespace->GetFullyQualifiedName(name, &parser_);
+    auto fullname = struct_def.defined_namespace->GetFullyQualifiedName(name);
     code_.SetValue("NAME", fullname);
     code_.SetValue("CONSTEXPR", "FLATBUFFERS_CONSTEXPR");
     code_ += "  static {{CONSTEXPR}} const char *GetFullyQualifiedName() {";
@@ -2124,7 +2124,7 @@ class CppGenerator : public BaseGenerator {
       }
       // Need to call "Create" with the struct namespace.
       const auto qualified_create_name =
-          struct_def.defined_namespace->GetFullyQualifiedName("Create", &parser_);
+          struct_def.defined_namespace->GetFullyQualifiedName("Create");
       code_.SetValue("CREATE_NAME", TranslateNameSpace(qualified_create_name));
       code_ += ") {";
       for (auto it = struct_def.fields.vec.begin();
@@ -2590,7 +2590,7 @@ class CppGenerator : public BaseGenerator {
       }
       // Need to call "Create" with the struct namespace.
       const auto qualified_create_name =
-          struct_def.defined_namespace->GetFullyQualifiedName("Create", &parser_);
+          struct_def.defined_namespace->GetFullyQualifiedName("Create");
       code_.SetValue("CREATE_NAME", TranslateNameSpace(qualified_create_name));
 
       code_ += "  return {{CREATE_NAME}}{{STRUCT_NAME}}(";
@@ -2817,7 +2817,6 @@ class CppGenerator : public BaseGenerator {
     // and common_prefix_size = 2
     size_t old_size = cur_name_space_ ? cur_name_space_->components.size() : 0;
     size_t new_size = ns ? ns->components.size() : 0;
-    const auto &prefixes = parser_.opts.namespace_prefix;
 
     size_t common_prefix_size = 0;
     while (common_prefix_size < old_size && common_prefix_size < new_size &&
@@ -2831,23 +2830,10 @@ class CppGenerator : public BaseGenerator {
     for (size_t j = old_size; j > common_prefix_size; --j) {
       code_ += "}  // namespace " + cur_name_space_->components[j - 1];
     }
-
-    if ( new_size == 0 ) {
-        for (auto it = prefixes.rbegin(); it != prefixes.rend();++it) {
-            code_ += "}  // namespace " + *it;
-        }
-    }
-
     if (old_size != common_prefix_size) { code_ += ""; }
 
     // open namespace parts to reach the ns namespace
     // in the previous example, E, then F, then G are opened
-    if ( old_size == 0 ) {
-        for (auto it = prefixes.begin(); it != prefixes.end(); ++it) {
-            code_ += "namespace " + *it + " {";
-        }
-    }
-
     for (auto j = common_prefix_size; j != new_size; ++j) {
       code_ += "namespace " + ns->components[j] + " {";
     }

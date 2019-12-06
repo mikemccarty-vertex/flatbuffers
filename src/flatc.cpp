@@ -138,8 +138,6 @@ std::string FlatCompiler::GetUsageString(const char *program_name) const {
     "  --include-prefix   Prefix this path to any generated include statements.\n"
     "    PATH\n"
     "  --keep-prefix      Keep original prefix of schema include statement.\n"
-    "  --namespace-prefix Prefix all namespaces in generated code"
-    "                     (e.g. \"com.example\" for Java modules).\n"
     "  --no-fb-import     Don't include flatbuffers import statement for TypeScript.\n"
     "  --no-ts-reexport   Don't re-export imported dependencies for TypeScript.\n"
     "  --short-names      Use short function names for JS and TypeScript.\n"

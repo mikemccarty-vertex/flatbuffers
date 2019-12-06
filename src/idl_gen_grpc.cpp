@@ -215,9 +215,7 @@ class FlatBufFile : public grpc_generator::File {
   }
 
   std::vector<std::string> package_parts() const {
-    std::vector<std::string> parts = parser_.opts.namespace_prefix;
-    parts.insert(parts.end(), parser_.current_namespace_->components.begin(), parser_.current_namespace_->components.end());
-    return parts;
+    return parser_.current_namespace_->components;
   }
 
   std::string additional_headers() const {
@@ -344,7 +342,7 @@ class JavaGRPCGenerator : public flatbuffers::BaseGenerator {
       auto service = file.service(i);
       const Definition *def = parser_.services_.vec[i];
       p.package_name =
-          def->defined_namespace->GetFullyQualifiedName("", &parser_);  // file.package();
+          def->defined_namespace->GetFullyQualifiedName("");  // file.package();
       std::string output =
           grpc_java_generator::GenerateServiceSource(&file, service.get(), &p);
       std::string filename =

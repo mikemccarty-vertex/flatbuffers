@@ -162,34 +162,13 @@ inline CheckedError atot<Offset<void>>(const char *s, Parser &parser,
 }
 
 std::string Namespace::GetFullyQualifiedName(const std::string &name,
-                                             const Parser* parser,
                                              size_t max_components) const {
   // Early exit if we don't have a defined namespace.
   if (components.empty() || !max_components) { return name; }
   std::string stream_str;
-  size_t nc = 0;
+  for (size_t i = 0; i < std::min(components.size(), max_components); i++) {
     if (i) { stream_str += '.'; }
     stream_str += std::string(components[i]);
-      const auto &prefixes = parser->opts.namespace_prefix;
-      for (auto it = prefixes.begin(); it != prefixes.end(); ++it,++nc) {
-          if (nc>0)
-          {
-              if ( nc == max_components )
-                  break;
-              stream << ".";
-          }
-          stream << *it;
-      }
-  }
-
-  for (auto it = components.begin(); it != components.end(); ++it,++nc) {
-    if (nc>0)
-    {
-        if ( nc == max_components )
-            break;
-        stream << ".";
-    }
-    stream << *it;
   }
   if (name.length()) {
     stream_str += '.';
@@ -538,7 +517,7 @@ EnumDef *Parser::LookupEnum(const std::string &id) {
   for (int components = static_cast<int>(current_namespace_->components.size());
        components >= 0; components--) {
     auto ed = enums_.Lookup(
-        current_namespace_->GetFullyQualifiedName(id, nullptr, components));
+        current_namespace_->GetFullyQualifiedName(id, components));
     if (ed) return ed;
   }
   return nullptr;
@@ -1614,7 +1593,7 @@ StructDef *Parser::LookupCreateStruct(const std::string &name,
     for (size_t components = current_namespace_->components.size();
          components && !struct_def; components--) {
       struct_def = LookupStruct(
-          current_namespace_->GetFullyQualifiedName(name, nullptr, components - 1));
+          current_namespace_->GetFullyQualifiedName(name, components - 1));
     }
   }
   if (!struct_def && create_if_new) {
@@ -2463,7 +2442,7 @@ CheckedError Parser::ParseRoot(const char *source, const char **include_paths,
              components && !enum_def; components--) {
           auto qualified_name =
               struct_def.defined_namespace->GetFullyQualifiedName(
-                  struct_def.name, nullptr, components - 1);
+                  struct_def.name, components - 1);
           enum_def = LookupEnum(qualified_name);
         }
         if (enum_def) {
