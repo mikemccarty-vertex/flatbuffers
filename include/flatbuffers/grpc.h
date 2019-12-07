@@ -22,6 +22,7 @@
 #include "flatbuffers/flatbuffers.h"
 #include "grpcpp/support/byte_buffer.h"
 #include "grpcpp/client_context.h"
+#include "grpcpp/server_context.h"
 #include "grpc/byte_buffer_reader.h"
 
 namespace flatbuffers {
