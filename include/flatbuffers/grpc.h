@@ -274,14 +274,14 @@ namespace grpc {
 template<class T> class SerializationTraits<flatbuffers::grpc::Message<T>> {
  public:
   static grpc::Status Serialize(const flatbuffers::grpc::Message<T> &msg,
-                                ByteBuffer **buffer, bool *own_buffer) {
+                                ByteBuffer* buffer, bool *own_buffer) {
     // We are passed in a `Message<T>`, which is a wrapper around a
     // `grpc_slice`. We extract it here using `BorrowSlice()`.
     auto slice = &msg.BorrowSlice();
     // Now package the single slice into a `ByteBuffer`,
     // incrementing the refcount in the process.
     ByteBuffer tmp(&slice, 1);
-    (*buffer)->Swap(&tmp);
+    buffer->Swap(&tmp);
     *own_buffer = true;
     return grpc::Status::OK;
   }
@@ -299,7 +299,7 @@ template<class T> class SerializationTraits<flatbuffers::grpc::Message<T>> {
     
     if ( slices.size()==1 ) {
         // We wrap a `Message<T>` around the slice, but dont increment refcount
-        *msg = flatbuffers::grpc::Message<T>(slices.begin().c_slice(), false);
+        *msg = flatbuffers::grpc::Message<T>(slices.begin()->c_slice(), false);
     }
     else {
         // Combine multiple slices into a single contiguous slice.
