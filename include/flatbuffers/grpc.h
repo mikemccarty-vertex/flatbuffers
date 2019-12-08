@@ -305,7 +305,7 @@ template<class T> class SerializationTraits<flatbuffers::grpc::Message<T>> {
     else {
         // Combine multiple slices into a single contiguous slice.
         Slice out_slice(buffer->Length());
-        uint8_t* const out = const_cast<uint8_t*>(out_slice.begin());
+        auto out = const_cast<uint8_t*>(out_slice.begin());
         for ( auto& in : slices ) {
             out = std::copy(in.begin(), in.end(), out);
         }
