@@ -277,7 +277,8 @@ template<class T> class SerializationTraits<flatbuffers::grpc::Message<T>> {
                                 ByteBuffer* buffer, bool *own_buffer) {
     // We are passed in a `Message<T>`, which is a wrapper around a
     // `grpc_slice`. We extract it here using `BorrowSlice()`.
-    auto slice = &msg.BorrowSlice();
+    grpc::Slice slice(msg.BorrowSlice(), grpc::Slice::ADD_REF);
+
     // Now package the single slice into a `ByteBuffer`,
     // incrementing the refcount in the process.
     ByteBuffer tmp(&slice, 1);
