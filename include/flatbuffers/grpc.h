@@ -17,8 +17,9 @@
 #ifndef FLATBUFFERS_GRPC_H_
 #define FLATBUFFERS_GRPC_H_
 
-// Helper functionality to glue FlatBuffers and GRPC.
+#include <algorithm>
 
+// Helper functionality to glue FlatBuffers and GRPC.
 #include "flatbuffers/flatbuffers.h"
 #include "grpcpp/support/byte_buffer.h"
 #include "grpcpp/client_context.h"
@@ -273,45 +274,45 @@ namespace grpc {
 template<class T> class SerializationTraits<flatbuffers::grpc::Message<T>> {
  public:
   static grpc::Status Serialize(const flatbuffers::grpc::Message<T> &msg,
-                                grpc_byte_buffer **buffer, bool *own_buffer) {
+                                ByteBuffer **buffer, bool *own_buffer) {
     // We are passed in a `Message<T>`, which is a wrapper around a
-    // `grpc_slice`. We extract it here using `BorrowSlice()`. The const cast
-    // is necesary because the `grpc_raw_byte_buffer_create` func expects
-    // non-const slices in order to increment their refcounts.
-    grpc_slice *slice = const_cast<grpc_slice *>(&msg.BorrowSlice());
-    // Now use `grpc_raw_byte_buffer_create` to package the single slice into a
-    // `grpc_byte_buffer`, incrementing the refcount in the process.
-    *buffer = grpc_raw_byte_buffer_create(slice, 1);
+    // `grpc_slice`. We extract it here using `BorrowSlice()`.
+    auto slice = &msg.BorrowSlice();
+    // Now package the single slice into a `ByteBuffer`,
+    // incrementing the refcount in the process.
+    ByteBuffer tmp(&slice, 1);
+    (*buffer)->Swap(&tmp);
     *own_buffer = true;
     return grpc::Status::OK;
   }
 
   // Deserialize by pulling the
-  static grpc::Status Deserialize(grpc_byte_buffer *buffer,
+  static grpc::Status Deserialize(ByteBuffer *buffer,
                                   flatbuffers::grpc::Message<T> *msg) {
     if (!buffer) {
       return ::grpc::Status(::grpc::StatusCode::INTERNAL, "No payload");
     }
-    // Check if this is a single uncompressed slice.
-    if ((buffer->type == GRPC_BB_RAW) &&
-        (buffer->data.raw.compression == GRPC_COMPRESS_NONE) &&
-        (buffer->data.raw.slice_buffer.count == 1)) {
-      // If it is, then we can reference the `grpc_slice` directly.
-      grpc_slice slice = buffer->data.raw.slice_buffer.slices[0];
-      // We wrap a `Message<T>` around the slice, incrementing the refcount.
-      *msg = flatbuffers::grpc::Message<T>(slice, true);
-    } else {
-      // Otherwise, we need to use `grpc_byte_buffer_reader_readall` to read
-      // `buffer` into a single contiguous `grpc_slice`. The gRPC reader gives
-      // us back a new slice with the refcount already incremented.
-      grpc_byte_buffer_reader reader;
-      grpc_byte_buffer_reader_init(&reader, buffer);
-      grpc_slice slice = grpc_byte_buffer_reader_readall(&reader);
-      grpc_byte_buffer_reader_destroy(&reader);
-      // We wrap a `Message<T>` around the slice, but dont increment refcount
-      *msg = flatbuffers::grpc::Message<T>(slice, false);
+
+    // Extract the bytes as a series of Slices
+    std::vector<Slice> slices;
+    buffer->Dump(&slices);
+    
+    if ( slices.size()==1 ) {
+        // We wrap a `Message<T>` around the slice, but dont increment refcount
+        *msg = flatbuffers::grpc::Message<T>(slices.begin().c_slice(), false);
     }
-    grpc_byte_buffer_destroy(buffer);
+    else {
+        // Combine multiple slices into a single contiguous slice.
+        Slice out_slice(buffer->Length());
+        uint8_t* const out = const_cast<uint8_t*>(out_slice.begin());
+        for ( auto& in : slices ) {
+            out = std::copy(in.begin(), in.end(), out);
+        }
+
+        // We wrap a `Message<T>` around the slice, but don't increment refcount
+        *msg = flatbuffers::grpc::Message<T>(out_slice.c_slice(), false);
+    }
+
 #if FLATBUFFERS_GRPC_DISABLE_AUTO_VERIFICATION
     return ::grpc::Status::OK;
 #else
