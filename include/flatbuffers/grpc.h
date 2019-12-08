@@ -137,7 +137,7 @@ class SliceAllocator : public Allocator {
                     in_use_front);
     slice_ = new_slice;
     grpc_slice_unref(old_slice);
-    return new_p;
+    return GRPC_SLICE_START_PTR(slice_);
   }
 
  private:
